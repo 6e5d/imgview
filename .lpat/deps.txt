@@ -2,3 +2,4 @@ wlbasic
 vkbasic
 vkbasic2d
 simpleimg
+camcon2
