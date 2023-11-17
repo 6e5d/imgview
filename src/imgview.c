@@ -6,6 +6,7 @@
 #include <string.h>
 #include <vulkan/vulkan.h>
 #include <wayland-client.h>
+#include <cglm/cglm.h>
 
 #include "../../camcon2/include/camcon2.h"
 #include "../../vkbasic/include/vkbasic.h"
@@ -28,21 +29,25 @@ static double angle_norm(double angle) {
 }
 
 static void write_cam(Imgview *iv) {
-	glm_mat4_identity(iv->vb2.view->view);
-	iv->vb2.view->view[0][0] = 2.0f / (float)iv->width;
-	iv->vb2.view->view[1][1] = 2.0f / (float)iv->height;
-	mat4 t;
-	camcon2_build(&iv->camcon, t);
-	glm_mat4_mul(iv->vb2.view->view, t, iv->vb2.view->view);
-	glm_mat4_identity(t);
-	t[0][0] = (float)iv->vb2.img.width;
-	t[1][1] = (float)iv->vb2.img.height;
-	t[3][0] = -(float)iv->vb2.img.width * 0.5f;
-	t[3][1] = -(float)iv->vb2.img.height * 0.5f;
-	glm_mat4_mul(iv->vb2.view->view, t, iv->vb2.view->view);
+	camcon2_build(&iv->camcon, iv->vb2.view->view);
 }
 
-static void alldamage(Imgview *iv) {
+void imgview_s2w(Imgview *iv, vec2 s, vec2 w) {
+	vec4 ss = {
+		s[0] - (float)iv->width * 0.5f,
+		s[1] - (float)iv->height * 0.5f,
+		0.0f, 1.0f};
+	vec4 ww;
+	mat4 t;
+	camcon2_build(&iv->camcon, t);
+	glm_mat4_inv(t, t);
+	glm_mat4_mulv(t, ss, ww);
+	w[0] = ww[0] / ww[3]; w[1] = ww[1] / ww[3];
+	w[0] += (float)iv->vb2.img.width * 0.5f;
+	w[1] += (float)iv->vb2.img.height * 0.5f;
+}
+
+void imgview_damage_all(Imgview *iv) {
 	iv->damage[0] = 0;
 	iv->damage[1] = 0;
 	iv->damage[2] = iv->vb2.img.width;
@@ -58,11 +63,12 @@ static void handle_resize(Imgview *iv) {
 	iv->vb2.recreate_pipeline = true;
 }
 
-static void render(Imgview *iv) {
+void imgview_render(Imgview *iv) {
 	if (iv->resize) {
 		handle_resize(iv);
 		iv->resize = false;
 	}
+	if (!iv->dirty) { return; }
 	write_cam(iv);
 	vkbasic_next_index(&iv->vb, iv->vks.device, &iv->iid);
 	vkbasic2d_build_command(
@@ -76,7 +82,7 @@ static void render(Imgview *iv) {
 	);
 	memset(iv->damage, 0, sizeof(iv->damage));
 	vkbasic_present(&iv->vb, iv->vks.queue, iv->vks.cbuf, &iv->iid);
-	wl_display_roundtrip(iv->wew.wl.display);
+	iv->dirty = false;
 }
 
 static void mview_event(WlezwrapMview *wewmv, double x, double y) {
@@ -94,7 +100,7 @@ static void mview_event(WlezwrapMview *wewmv, double x, double y) {
 	} else if (wewmv->button == 2) {
 		iv->camcon.k *=  1.0f - (float)(y - wewmv->py) * 0.005f;
 	}
-	render(iv);
+	iv->dirty = true;
 }
 
 static void f_key(Imgview *iv, char key, bool pressed) {
@@ -102,30 +108,32 @@ static void f_key(Imgview *iv, char key, bool pressed) {
 	if (!pressed) { return; }
 	if (key == 'j') {
 		iv->camcon.y -= move_distance * (float)iv->vb2.img.height;
-		render(iv);
 	} else if (key == 'k') {
 		iv->camcon.y += move_distance * (float)iv->vb2.img.height;
-		render(iv);
 	} else if (key == 'h') {
 		iv->camcon.x += move_distance * (float)iv->vb2.img.width;
-		render(iv);
 	} else if (key == 'l') {
 		iv->camcon.x -= move_distance * (float)iv->vb2.img.width;
-		render(iv);
 	} else if (key == 'i') {
 		iv->camcon.k *= 1.33f;
-		render(iv);
 	} else if (key == 'o') {
 		iv->camcon.k /= 1.33f;
-		render(iv);
+	} else {
+		return;
 	}
+	iv->dirty = true;
 }
 
 static void f_resize(Imgview *iv, uint32_t w, uint32_t h) {
 	iv->width = w;
 	iv->height = h;
 	iv->resize = true;
-	render(iv);
+	iv->dirty = true;
+
+	glm_mat4_identity(iv->vb2.view->proj);
+	float (*mp)[4] = (float (*)[4])iv->vb2.view->proj;
+	mp[0][0] = 2.0f / (float)w;
+	mp[1][1] = 2.0f / (float)h;
 }
 
 static void f_quit(Imgview *iv) {
@@ -146,37 +154,41 @@ static void f_event(void* data, uint8_t type, WlezwrapEvent *e) {
 		f_key(iv, e->key[0], (bool)e->key[1]);
 		break;
 	}
+	if (iv->event != NULL) {
+		iv->event(iv, type, e);
+	}
 }
 
-void imgview_init(Imgview* iv, char* path) {
+static void setup_img(Imgview* iv, uint32_t width, uint32_t height) {
+	iv->vb2.img.width = width;
+	iv->vb2.img.height = height;
+	vkbasic2d_init(&iv->vb2, &iv->vks);
+	memset(iv->vb2.img.data, 0, width * height * 4);
+
+	glm_mat4_identity(iv->vb2.view->model);
+	float (*mm)[4] = (float (*)[4])iv->vb2.view->model;
+	mm[0][0] = (float)width;
+	mm[1][1] = (float)height;
+	mm[3][0] = -(float)width * 0.5f;
+	mm[3][1] = -(float)height * 0.5f;
+}
+
+void imgview_init(Imgview* iv, uint32_t width, uint32_t height) {
 	wlezwrap_confgen(&iv->wew);
 	iv->wew.data = (void*)iv;
 	iv->wew.event = f_event;
 	wlezwrap_init(&iv->wew);
 	iv->wewmv.event = mview_event;
 	iv->wewmv.data = (void*)iv;
-
 	vkwayland_new(&iv->vks, iv->wew.wl.display, iv->wew.wl.surface);
 	vkbasic_init(&iv->vb, iv->vks.device);
-
-	// img loading and uploading
-	Simpleimg img;
-	simpleimg_load(&img, path);
-	iv->vb2.img.width = img.width;
-	iv->vb2.img.height = img.height;
-	vkbasic2d_init(&iv->vb2, &iv->vks);
-	memcpy(iv->vb2.img.data, img.data, img.width * img.height * 4);
-	simpleimg_deinit(&img);
-
+	setup_img(iv, width, height);
 	camcon2_init(&iv->camcon);
 	iv->camcon.k = 0.5;
-	alldamage(iv);
-
 	iv->resize = true;
 	iv->width = 640;
 	iv->height = 640;
-	printf("init finished\n");
-	render(iv);
+	iv->dirty = true;
 }
 
 void imgview_deinit(Imgview* iv) {
