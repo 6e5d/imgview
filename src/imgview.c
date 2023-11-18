@@ -130,8 +130,8 @@ static void f_resize(Imgview *iv, uint32_t w, uint32_t h) {
 	iv->resize = true;
 	iv->dirty = true;
 
-	glm_mat4_identity(iv->vb2.view->proj);
-	float (*mp)[4] = (float (*)[4])iv->vb2.view->proj;
+	vec4 *mp = (vec4*)iv->vb2.view->proj;
+	glm_mat4_identity(mp);
 	mp[0][0] = 2.0f / (float)w;
 	mp[1][1] = 2.0f / (float)h;
 }
@@ -165,8 +165,8 @@ static void setup_img(Imgview* iv, uint32_t width, uint32_t height) {
 	vkbasic2d_init(&iv->vb2, &iv->vks);
 	memset(iv->vb2.img.data, 0, width * height * 4);
 
-	glm_mat4_identity(iv->vb2.view->model);
-	float (*mm)[4] = (float (*)[4])iv->vb2.view->model;
+	vec4 *mm = (vec4*)iv->vb2.view->model;
+	glm_mat4_identity(mm);
 	mm[0][0] = (float)width;
 	mm[1][1] = (float)height;
 	mm[3][0] = -(float)width * 0.5f;
