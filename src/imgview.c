@@ -104,7 +104,7 @@ static void mview_event(WlezwrapMview *wewmv, double x, double y) {
 }
 
 static void f_key(Imgview *iv, char key, bool pressed) {
-	float move_distance = 0.1f * iv->camcon.k;
+	float move_distance = 0.1f;
 	if (!pressed) { return; }
 	if (key == 'j') {
 		iv->camcon.y -= move_distance * (float)iv->vb2.img.height;
