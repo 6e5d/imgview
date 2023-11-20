@@ -43,15 +43,6 @@ void imgview_s2w(Imgview *iv, vec2 s, vec2 w) {
 	glm_mat4_inv(t, t);
 	glm_mat4_mulv(t, ss, ww);
 	w[0] = ww[0] / ww[3]; w[1] = ww[1] / ww[3];
-	w[0] += (float)iv->vb2.img.width * 0.5f;
-	w[1] += (float)iv->vb2.img.height * 0.5f;
-}
-
-void imgview_damage_all(Imgview *iv) {
-	iv->damage[0] = 0;
-	iv->damage[1] = 0;
-	iv->damage[2] = iv->vb2.img.width;
-	iv->damage[3] = iv->vb2.img.height;
 }
 
 static void handle_resize(Imgview *iv) {
@@ -104,17 +95,8 @@ static void mview_event(WlezwrapMview *wewmv, double x, double y) {
 }
 
 static void f_key(Imgview *iv, char key, bool pressed) {
-	float move_distance = 0.1f;
 	if (!pressed) { return; }
-	if (key == 'j') {
-		iv->camcon.y -= move_distance * (float)iv->vb2.img.height;
-	} else if (key == 'k') {
-		iv->camcon.y += move_distance * (float)iv->vb2.img.height;
-	} else if (key == 'h') {
-		iv->camcon.x += move_distance * (float)iv->vb2.img.width;
-	} else if (key == 'l') {
-		iv->camcon.x -= move_distance * (float)iv->vb2.img.width;
-	} else if (key == 'i') {
+	if (key == 'i') {
 		iv->camcon.k *= 1.33f;
 	} else if (key == 'o') {
 		iv->camcon.k /= 1.33f;
@@ -159,21 +141,7 @@ static void f_event(void* data, uint8_t type, WlezwrapEvent *e) {
 	}
 }
 
-static void setup_img(Imgview* iv, uint32_t width, uint32_t height) {
-	iv->vb2.img.width = width;
-	iv->vb2.img.height = height;
-	vkbasic2d_init(&iv->vb2, &iv->vks);
-	memset(iv->vb2.img.data, 0, width * height * 4);
-
-	vec4 *mm = (vec4*)iv->vb2.view->model;
-	glm_mat4_identity(mm);
-	mm[0][0] = (float)width;
-	mm[1][1] = (float)height;
-	mm[3][0] = -(float)width * 0.5f;
-	mm[3][1] = -(float)height * 0.5f;
-}
-
-void imgview_init(Imgview* iv, uint32_t width, uint32_t height) {
+void imgview_init(Imgview* iv) {
 	wlezwrap_confgen(&iv->wew);
 	iv->wew.data = (void*)iv;
 	iv->wew.event = f_event;
@@ -182,13 +150,13 @@ void imgview_init(Imgview* iv, uint32_t width, uint32_t height) {
 	iv->wewmv.data = (void*)iv;
 	vkwayland_new(&iv->vks, iv->wew.wl.display, iv->wew.wl.surface);
 	vkbasic_init(&iv->vb, iv->vks.device);
-	setup_img(iv, width, height);
+	vkbasic2d_init(&iv->vb2, &iv->vks);
 	camcon2_init(&iv->camcon);
 	iv->camcon.k = 0.5;
 	iv->resize = true;
-	iv->width = 640;
-	iv->height = 640;
 	iv->dirty = true;
+	iv->width = 640;
+	iv->height = 480;
 }
 
 void imgview_deinit(Imgview* iv) {

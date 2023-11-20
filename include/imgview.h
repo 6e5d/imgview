@@ -33,5 +33,5 @@ struct Imgview {
 void imgview_s2w(Imgview *iv, vec2 s, vec2 w);
 void imgview_damage_all(Imgview *iv);
 void imgview_render(Imgview *iv);
-void imgview_init(Imgview* iv, uint32_t width, uint32_t height);
+void imgview_init(Imgview* iv);
 void imgview_deinit(Imgview* iv);
