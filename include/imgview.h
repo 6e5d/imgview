@@ -9,6 +9,7 @@
 #include "../../wlezwrap/include/mview.h"
 #include "../../wlezwrap/include/wlezwrap.h"
 #include "../../simpleimg/include/simpleimg.h"
+#include "../include/lyc.h"
 
 typedef struct Imgview Imgview;
 
@@ -33,5 +34,6 @@ struct Imgview {
 void imgview_s2w(Imgview *iv, vec2 s, vec2 w);
 void imgview_damage_all(Imgview *iv);
 void imgview_render(Imgview *iv);
+void imgview_insert_layer(Imgview* iv, ImgviewLyc *lyc);
 void imgview_init(Imgview* iv);
 void imgview_deinit(Imgview* iv);

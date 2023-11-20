@@ -17,6 +17,7 @@
 #include "../../wlezwrap/include/wlezwrap.h"
 #include "../../simpleimg/include/simpleimg.h"
 #include "../include/imgview.h"
+#include "../include/lyc.h"
 
 static double angle_norm(double angle) {
 	while (angle >= M_PI) {
@@ -139,6 +140,11 @@ static void f_event(void* data, uint8_t type, WlezwrapEvent *e) {
 	if (iv->event != NULL) {
 		iv->event(iv, type, e);
 	}
+}
+
+void imgview_insert_layer(Imgview* iv, ImgviewLyc *lyc) {
+	vkbasic2d_insert_layer(&iv->vb2, &iv->vks,
+		lyc->offset[0], lyc->offset[1], &lyc->img, lyc->lid);
 }
 
 void imgview_init(Imgview* iv) {
