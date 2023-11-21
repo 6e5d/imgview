@@ -3,3 +3,5 @@ vkbasic
 vkbasic2d
 simpleimg
 camcon2
+ltree
+ppath

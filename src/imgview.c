@@ -11,6 +11,7 @@
 #include "../../camcon2/include/camcon2.h"
 #include "../../vkbasic/include/vkbasic.h"
 #include "../../vkwayland/include/vkwayland.h"
+#include "../../vkstatic/include/oneshot.h"
 #include "../../vkstatic/include/vkstatic.h"
 #include "../../vkbasic2d/include/vkbasic2d.h"
 #include "../../wlezwrap/include/mview.h"
@@ -48,11 +49,10 @@ void imgview_s2w(Imgview *iv, vec2 s, vec2 w) {
 
 static void handle_resize(Imgview *iv) {
 	assert(0 == vkDeviceWaitIdle(iv->vks.device));
-	vkbasic_swapchain_update(&iv->vb, &iv->vks, iv->vb2.renderpass,
+	vkbasic_swapchain_update(&iv->vb, &iv->vks, iv->vb2.rp_layer,
 		iv->width, iv->height);
 	iv->iid = 0;
 	wl_surface_commit(iv->wew.wl.surface);
-	iv->vb2.recreate_pipeline = true;
 }
 
 void imgview_render(Imgview *iv) {
@@ -80,8 +80,10 @@ void imgview_render(Imgview *iv) {
 static void mview_event(WlezwrapMview *wewmv, double x, double y) {
 	Imgview *iv = (Imgview*)wewmv->data;
 	if (wewmv->button == 0) {
-		iv->camcon.x += (float)(x - wewmv->px);
-		iv->camcon.y += (float)(y - wewmv->py);
+		vec2 wpos = {(float)(x - wewmv->px), (float)(y - wewmv->py)};
+		camcon2_s2w(&iv->camcon, wpos, wpos);
+		iv->camcon.x += wpos[0];
+		iv->camcon.y += wpos[1];
 	} else if (wewmv->button == 1) {
 		double cx = (double)iv->width / 2.0;
 		double cy = (double)iv->height / 2.0;
@@ -143,8 +145,15 @@ static void f_event(void* data, uint8_t type, WlezwrapEvent *e) {
 }
 
 void imgview_insert_layer(Imgview* iv, ImgviewLyc *lyc) {
-	vkbasic2d_insert_layer(&iv->vb2, &iv->vks,
-		lyc->offset[0], lyc->offset[1], &lyc->img, lyc->lid);
+	uint32_t w = lyc->img.width;
+	uint32_t h = lyc->img.height;
+	vkbasic2d_insert_layer(&iv->vb2, &iv->vks, lyc->lid,
+		lyc->offset[0], lyc->offset[1], w, h);
+	memcpy(iv->vb2.overlay.data, lyc->img.data, 4 * w * h);
+	VkCommandBuffer cbuf = vkstatic_oneshot_begin(&iv->vks);
+	vkbasic2d_build_command_copy_image(&iv->vb2, cbuf, iv->vb2.ldx_focus);
+	vkstatic_oneshot_end(cbuf, &iv->vks);
+	memset(iv->vb2.overlay.data, 0, 4 * w * h);
 }
 
 void imgview_init(Imgview* iv) {
@@ -158,7 +167,7 @@ void imgview_init(Imgview* iv) {
 	vkbasic_init(&iv->vb, iv->vks.device);
 	vkbasic2d_init(&iv->vb2, &iv->vks);
 	camcon2_init(&iv->camcon);
-	iv->camcon.k = 0.5;
+	iv->camcon.k = 1.0;
 	iv->resize = true;
 	iv->dirty = true;
 	iv->width = 640;
