@@ -14,3 +14,4 @@ typedef struct {
 } ImgviewLyc;
 
 size_t imgview_lyc_load(ImgviewLyc **lycp, char* path);
+void imgview_lyc_deinit(ImgviewLyc *lycp);

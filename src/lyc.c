@@ -43,13 +43,18 @@ size_t imgview_lyc_load(ImgviewLyc **lycp, char* path) {
 		vdlyc[i].offset[1] = (int32_t)elem2[5].data.vint;
 		assert(elem2[7].ty == 4);
 		char *pabs = ppath_abs(path);
-		char *result = ppath_rel_new(pabs, "..");
-		char *result2 = ppath_rel_new(result, elem2[7].data.vstring);
+		char *result = ppath_rel(pabs, "..");
+		char *result2 = ppath_rel(result, elem2[7].data.vstring);
 		printf("loading layer image: %s\n", result2);
 		simpleimg_load(&vdlyc[i].img, result2);
 		free(pabs);
 		free(result);
 		free(result2);
 	}
+	ltree_destroy_recurse(&v);
 	return llen;
+}
+
+void imgview_lyc_deinit(ImgviewLyc *lyc) {
+	simpleimg_deinit(&lyc->img);
 }
