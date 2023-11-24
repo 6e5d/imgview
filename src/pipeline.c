@@ -57,9 +57,10 @@ void imgview_init_render(Imgview* iv, uint32_t img_width, uint32_t img_height) {
 	vkhelper_buffer_init_gpu(&iv->ubufg, sizeof(ImgviewUniform),
 		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 		iv->vks.device, iv->vks.memprop);
+	// TODO: mipmap is required, do a copy between vwdlayout and imgview
 	vkhelper_image_new(
 		&iv->img, iv->vks.device, iv->vks.memprop,
-		img_width, img_height,
+		img_width, img_height, false,
 		VK_FORMAT_B8G8R8A8_UNORM,
 		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 			| VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
@@ -73,7 +74,7 @@ void imgview_init_render(Imgview* iv, uint32_t img_width, uint32_t img_height) {
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		VK_PIPELINE_STAGE_HOST_BIT,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		iv->img.image);
+		iv->img);
 	vkstatic_oneshot_end(cbuf, &iv->vks);
 
 	// desc set
