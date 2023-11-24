@@ -1,7 +1,6 @@
-wlezwrap
 vkwayland
 vkbasic
+vkstatic
 vkhelper
 simpleimg
-camcon2
 ppath
