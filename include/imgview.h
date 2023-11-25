@@ -8,6 +8,7 @@
 
 typedef struct Imgview Imgview;
 
+#include "../../dmgrect/include/dmgrect.h"
 #include "../../vkbasic/include/vkbasic.h"
 #include "../../vkstatic/include/vkstatic.h"
 #include "../../vkhelper/include/buffer.h"
@@ -38,10 +39,10 @@ struct Imgview {
 };
 
 void imgview_render_prepare(Imgview *iv);
-void imgview_render(Imgview *iv);
+void imgview_render(Imgview *iv, VkhelperImage *image);
 void imgview_init(Imgview* iv,
 	struct wl_display *display, struct wl_surface *surface,
-	uint32_t img_width, uint32_t img_height);
+	Dmgrect *rect);
 void imgview_deinit(Imgview* iv);
 void imgview_resize(Imgview *iv, struct wl_surface *surface,
 	uint32_t w, uint32_t h);

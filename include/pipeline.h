@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../dmgrect/include/dmgrect.h"
 #include "imgview.h"
 
-void imgview_init_render(Imgview* iv, uint32_t img_width, uint32_t img_height);
+void imgview_init_render(Imgview* iv, Dmgrect *dmg);

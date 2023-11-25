@@ -2,5 +2,5 @@ vkwayland
 vkbasic
 vkstatic
 vkhelper
-simpleimg
 ppath
+dmgrect
