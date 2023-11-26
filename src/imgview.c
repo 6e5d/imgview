@@ -13,6 +13,7 @@
 #include "../../vkhelper/include/barrier.h"
 #include "../../vkhelper/include/buffer.h"
 #include "../../vkhelper/include/copy.h"
+#include "../../vkhelper/include/dynstate.h"
 #include "../../vkhelper/include/shader.h"
 #include "../../vkhelper/include/desc.h"
 #include "../../vkstatic/include/vkstatic.h"
@@ -47,35 +48,16 @@ void imgview_resize(Imgview *iv, struct wl_surface *surface,
 static void imgview_build_command(Imgview *iv, VkCommandBuffer cbuf) {
 	uint32_t width = iv->window_size[0];
 	uint32_t height = iv->window_size[1];
-	VkViewport viewport = {0.0f, 0.0f,
-		(float)width, (float)height,
-		0.0f, 1.0f};
-	VkRect2D scissor = {{0.0f, 0.0f}, {width, height}};
 	vkCmdUpdateBuffer(cbuf, iv->ubufg.buffer,
 		0, sizeof(ImgviewUniform), &iv->uniform);
-	vkCmdSetViewport(cbuf, 0, 1, &viewport);
-	vkCmdSetScissor(cbuf, 0, 1, &scissor);
+	vkhelper_viewport_scissor(cbuf, width, height);
 
 	VkFramebuffer fb = iv->vb.vs.elements[iv->iid].framebuffer;
-	VkRenderPassBeginInfo rp_info = {
-		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-		.renderPass = iv->rp,
-		.framebuffer = fb,
-		.renderArea.offset.x = 0,
-		.renderArea.offset.y = 0,
-		.renderArea.extent.width = iv->window_size[0],
-		.renderArea.extent.height = iv->window_size[1],
-	};
-	vkCmdBeginRenderPass(cbuf, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
-	vkCmdBindPipeline(
-		cbuf,
-		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		iv->ppl_grid);
+	vkhelper_renderpass_begin(cbuf, iv->rp, fb,
+		iv->window_size[0], iv->window_size[1]);
+	vkCmdBindPipeline(cbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, iv->ppl_grid);
 	vkCmdDraw(cbuf, 6, 1, 0, 0);
-	vkCmdBindPipeline(
-		cbuf,
-		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		iv->ppl_view);
+	vkCmdBindPipeline(cbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, iv->ppl_view);
 	vkCmdBindDescriptorSets(
 		cbuf,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -88,11 +70,7 @@ static void imgview_build_command(Imgview *iv, VkCommandBuffer cbuf) {
 void imgview_render_prepare(Imgview *iv) {
 	imgview_try_present(iv);
 	vkbasic_next_index(&iv->vb, iv->vks.device, &iv->iid);
-	VkCommandBufferBeginInfo info = {
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-	};
-	assert(0 == vkBeginCommandBuffer(iv->vks.cbuf, &info));
+	vkstatic_begin(&iv->vks);
 }
 
 static void blit(VkCommandBuffer cbuf,
