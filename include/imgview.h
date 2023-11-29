@@ -1,4 +1,5 @@
-#pragma once
+#ifndef INCLUDEGUARD_IMGVIEW_IMGVIEWH
+#define INCLUDEGUARD_IMGVIEW_IMGVIEWH
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -11,17 +12,14 @@ typedef struct Imgview Imgview;
 #include "../../dmgrect/include/dmgrect.h"
 #include "../../vkbasic/include/vkbasic.h"
 #include "../../vkstatic/include/vkstatic.h"
-#include "../../vkhelper/include/buffer.h"
-#include "../../vkhelper/include/desc.h"
-#include "../../vkhelper/include/pipeline.h"
-#include "../../vkhelper/include/renderpass.h"
+#include "../../vkhelper2/include/vkhelper2.h"
 #include "../include/uniform.h"
 
 struct Imgview {
 	ImgviewUniform uniform;
-	VkhelperBuffer ubufg;
-	VkhelperImage img;
-	VkhelperDesc desc;
+	Vkhelper2Buffer ubufg;
+	Vkhelper2Image img;
+	Vkhelper2Desc desc;
 	VkSampler sampler;
 
 	VkRenderPass rp;
@@ -39,10 +37,11 @@ struct Imgview {
 };
 
 void imgview_render_prepare(Imgview *iv);
-void imgview_render(Imgview *iv, VkhelperImage *image);
+void imgview_render(Imgview *iv, Vkhelper2Image *image);
 void imgview_init(Imgview* iv,
-	struct wl_display *display, struct wl_surface *surface,
-	Dmgrect *rect);
+struct wl_display *display, struct wl_surface *surface, Dmgrect *rect);
 void imgview_deinit(Imgview* iv);
 void imgview_resize(Imgview *iv, struct wl_surface *surface,
 	uint32_t w, uint32_t h);
+
+#endif

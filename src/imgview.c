@@ -1,21 +1,11 @@
-#include <assert.h>
 #include <math.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <vulkan/vulkan.h>
 #include <wayland-client.h>
 
 #include "../../dmgrect/include/dmgrect.h"
 #include "../../vkbasic/include/vkbasic.h"
 #include "../../vkwayland/include/vkwayland.h"
-#include "../../vkhelper/include/barrier.h"
-#include "../../vkhelper/include/buffer.h"
-#include "../../vkhelper/include/copy.h"
-#include "../../vkhelper/include/dynstate.h"
-#include "../../vkhelper/include/shader.h"
-#include "../../vkhelper/include/desc.h"
+#include "../../vkhelper2/include/vkhelper2.h"
 #include "../../vkstatic/include/vkstatic.h"
 #include "../include/imgview.h"
 #include "../include/pipeline.h"
@@ -50,10 +40,10 @@ static void imgview_build_command(Imgview *iv, VkCommandBuffer cbuf) {
 	uint32_t height = iv->window_size[1];
 	vkCmdUpdateBuffer(cbuf, iv->ubufg.buffer,
 		0, sizeof(ImgviewUniform), &iv->uniform);
-	vkhelper_viewport_scissor(cbuf, width, height);
+	vkhelper2_dynstate_vs(cbuf, width, height);
 
 	VkFramebuffer fb = iv->vb.vs.elements[iv->iid].framebuffer;
-	vkhelper_renderpass_begin(cbuf, iv->rp, fb,
+	vkhelper2_renderpass_begin(cbuf, iv->rp, fb,
 		iv->window_size[0], iv->window_size[1]);
 	vkCmdBindPipeline(cbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, iv->ppl_grid);
 	vkCmdDraw(cbuf, 6, 1, 0, 0);
@@ -74,7 +64,7 @@ void imgview_render_prepare(Imgview *iv) {
 }
 
 static void blit(VkCommandBuffer cbuf,
-	VkhelperImage *src, VkhelperImage *dst) {
+	Vkhelper2Image *src, Vkhelper2Image *dst) {
 	assert(src->size[0] == dst->size[0]);
 	assert(src->size[1] == dst->size[1]);
 	VkImageLayout src_layout = src->layout;
@@ -109,11 +99,11 @@ static void blit(VkCommandBuffer cbuf,
 		if (offsets2[1].x == 0) { offsets2[1].x = 1; }
 		if (offsets2[1].y == 0) { offsets2[1].y = 1; }
 	}
-	vkhelper_barrier(cbuf, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+	vkhelper2_barrier(cbuf, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
 		src);
-	vkhelper_barrier(cbuf, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	vkhelper2_barrier(cbuf, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
 		dst);
@@ -123,18 +113,18 @@ static void blit(VkCommandBuffer cbuf,
 		dst->image,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		dst->mip, iblits, VK_FILTER_LINEAR);
-	vkhelper_barrier(cbuf, dst_layout,
+	vkhelper2_barrier(cbuf, dst_layout,
 		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
 		dst);
-	vkhelper_barrier(cbuf, src_layout,
+	vkhelper2_barrier(cbuf, src_layout,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
 		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 		src);
 	free(iblits);
 }
 
-void imgview_render(Imgview *iv, VkhelperImage *image) {
+void imgview_render(Imgview *iv, Vkhelper2Image *image) {
 	VkCommandBuffer cbuf = iv->vks.cbuf;
 	blit(cbuf, image, &iv->img);
 	imgview_build_command(iv, cbuf);
@@ -157,9 +147,9 @@ void imgview_init(Imgview* iv,
 
 void imgview_deinit(Imgview* iv) {
 	VkDevice device = iv->vks.device;
-	vkhelper_desc_deinit(&iv->desc, device);
-	vkhelper_buffer_deinit(&iv->ubufg, device);
-	vkhelper_image_deinit(&iv->img, device);
+	vkhelper2_desc_deinit(&iv->desc, device);
+	vkhelper2_buffer_deinit(&iv->ubufg, device);
+	vkhelper2_image_deinit(&iv->img, device);
 	vkDestroySampler(device, iv->sampler, NULL);
 	vkDestroyRenderPass(device, iv->rp, NULL);
 	vkDestroyPipeline(device, iv->ppl_grid, NULL);
