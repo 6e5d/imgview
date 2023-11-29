@@ -1,6 +1,6 @@
 vkwayland
 vkbasic
 vkstatic
-vkhelper
+vkhelper2
 ppath
 dmgrect
