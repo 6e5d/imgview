@@ -1,9 +1,6 @@
-#ifndef INCLUDEGUARD_IMGVIEW_IMGVIEWH
-#define INCLUDEGUARD_IMGVIEW_IMGVIEWH
+#ifndef INCLUDEGUARD_IMGVIEW
+#define INCLUDEGUARD_IMGVIEW
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
 #include <vulkan/vulkan.h>
 #include <wayland-client.h>
 
