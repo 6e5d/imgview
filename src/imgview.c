@@ -129,7 +129,7 @@ void imgview_render(Imgview *iv, Vkhelper2Image *image) {
 	blit(cbuf, image, &iv->img);
 	imgview_build_command(iv, cbuf);
 	assert(0 == vkEndCommandBuffer(cbuf));
-	vkbasic_submit(&iv->vb, iv->vks.queue, cbuf, &iv->iid);
+	vkbasic_submit(&iv->vb, iv->vks.queue, cbuf);
 	iv->present = true;
 }
 
@@ -156,6 +156,6 @@ void imgview_deinit(Imgview* iv) {
 	vkDestroyPipelineLayout(device, iv->ppll_grid, NULL);
 	vkDestroyPipeline(device, iv->ppl_view, NULL);
 	vkDestroyPipelineLayout(device, iv->ppll_view, NULL);
-	vkbasic_deinit(&iv->vb, device, iv->vks.cpool);
+	vkbasic_deinit(&iv->vb, device);
 	vkstatic_deinit(&iv->vks);
 }
