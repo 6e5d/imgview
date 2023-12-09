@@ -117,10 +117,7 @@ void imgview_init_render(Imgview* iv, Dmgrect *dmg) {
 	Vkhelper2RenderpassConfig renderpass_conf;
 	vkhelper2_renderpass_config(&renderpass_conf,
 		iv->vks.surface_format.format, iv->vks.depth_format);
-	vkhelper2_renderpass_build(
-		&iv->rp,
-		&renderpass_conf,
-		iv->vks.device);
+	vkhelper2_renderpass_build(&iv->rp, &renderpass_conf, iv->vks.device);
 	imgview_init_pipeline_grid(iv, iv->vks.device);
 	imgview_init_pipeline_view(iv, iv->vks.device);
 }
