@@ -34,6 +34,7 @@ struct Imgview {
 };
 
 void imgview_render_prepare(Imgview *iv);
+void imgview_try_present(Imgview *iv); // sync
 void imgview_render(Imgview *iv, Vkhelper2Image *image);
 void imgview_init(Imgview* iv,
 struct wl_display *display, struct wl_surface *surface, Dmgrect *rect);

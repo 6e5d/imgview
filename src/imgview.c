@@ -10,7 +10,7 @@
 #include "../include/imgview.h"
 #include "../include/pipeline.h"
 
-static void imgview_try_present(Imgview *iv) {
+void imgview_try_present(Imgview *iv) {
 	if (iv->present) {
 		vkbasic_present(&iv->vb, iv->vks.queue, &iv->iid);
 		iv->present = false;
