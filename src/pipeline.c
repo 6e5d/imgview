@@ -7,6 +7,35 @@
 #include "../include/pipeline.h"
 #include "../include/imgview.h"
 
+static void imgview_init_pipeline_dots(Imgview *iv, VkDevice device) {
+	char *path = NULL;
+	Vkhelper2PipelineConfig vpc = {0};
+	vkhelper2_pipeline_config(&vpc, 1, 1, 0);
+	vpc.ias.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+	vpc.vib[0] = (VkVertexInputBindingDescription) {
+		.binding = 0,
+		.stride = sizeof(ImgviewDot),
+		.inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
+	};
+	typedef VkVertexInputAttributeDescription Via;
+	vpc.via[0] = (Via) {
+		.binding = 0,
+		.location = 0,
+		.format = VK_FORMAT_R32G32_SFLOAT,
+		.offset = 0,
+	};
+	vkhelper2_pipeline_simple_shader(&vpc, device,
+		__FILE__, "../../shader/dots");
+	free(path);
+
+	vpc.dss.depthTestEnable = VK_FALSE;
+	vpc.dss.depthWriteEnable = VK_FALSE;
+	vpc.rast.cullMode = VK_CULL_MODE_NONE;
+	vkhelper2_pipeline_build(&iv->ppll_dots, &iv->ppl_dots,
+		&vpc, iv->rp, device, 0);
+	vkhelper2_pipeline_config_deinit(&vpc, device);
+}
+
 static void imgview_init_pipeline_grid(Imgview *iv, VkDevice device) {
 	char *path = NULL;
 	Vkhelper2PipelineConfig vpc = {0};
@@ -24,16 +53,11 @@ static void imgview_init_pipeline_grid(Imgview *iv, VkDevice device) {
 }
 
 static void imgview_init_pipeline_view(Imgview *iv, VkDevice device) {
-	char *path = NULL;
 	Vkhelper2PipelineConfig vpc = {0};
 	vkhelper2_pipeline_config(&vpc, 0, 0, 1);
 
-	ppath_rel(&path, __FILE__, "../../shader/view_vert.spv");
-	vpc.stages[0].module = vkhelper2_shader_module(device, path);
-	ppath_rel(&path, __FILE__, "../../shader/view_frag.spv");
-	vpc.stages[1].module = vkhelper2_shader_module(device, path);
-	free(path);
-
+	vkhelper2_pipeline_simple_shader(&vpc, device,
+		__FILE__, "../../shader/view");
 	vpc.dss.depthTestEnable = VK_FALSE;
 	vpc.dss.depthWriteEnable = VK_FALSE;
 	vpc.rast.cullMode = VK_CULL_MODE_NONE;
@@ -45,6 +69,15 @@ static void imgview_init_pipeline_view(Imgview *iv, VkDevice device) {
 
 void imgview_init_render(Imgview* iv, Dmgrect *dmg) {
 	// buffer
+	vkhelper2_buffer_init_gpu(&iv->dotsg,
+		sizeof(ImgviewDot) * IMGVIEW_MAXDOT,
+		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		iv->vks.device, iv->vks.memprop);
+	vkhelper2_buffer_init_cpu(&iv->dotsc,
+		sizeof(ImgviewDot) * IMGVIEW_MAXDOT,
+		iv->vks.device, iv->vks.memprop);
+	assert(0 == vkMapMemory(iv->vks.device, iv->dotsc.memory, 0,
+		sizeof(ImgviewDot) * IMGVIEW_MAXDOT, 0, (void**)&iv->dots));
 	vkhelper2_buffer_init_gpu(&iv->ubufg, sizeof(ImgviewUniform),
 		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 		iv->vks.device, iv->vks.memprop);
@@ -120,4 +153,5 @@ void imgview_init_render(Imgview* iv, Dmgrect *dmg) {
 	vkhelper2_renderpass_build(&iv->rp, &renderpass_conf, iv->vks.device);
 	imgview_init_pipeline_grid(iv, iv->vks.device);
 	imgview_init_pipeline_view(iv, iv->vks.device);
+	imgview_init_pipeline_dots(iv, iv->vks.device);
 }

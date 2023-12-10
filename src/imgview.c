@@ -35,11 +35,50 @@ void imgview_resize(Imgview *iv, struct wl_surface *surface,
 	wl_surface_commit(surface);
 }
 
+static void imgview_draw_point(Imgview *iv, int32_t x, int32_t y) {
+	if (iv->dots_len >= IMGVIEW_MAXDOT) {
+		fprintf(stderr, "error: dots len overflow\n");
+		return;
+	}
+	if (x < 0 || y < 0 ||
+		x >= (int32_t)iv->window_size[0] ||
+		y >= (int32_t)iv->window_size[1])
+	{
+		return;
+	}
+	ImgviewDot *dot = &iv->dots[iv->dots_len];
+	dot->x = 2.0f * (float)x / (float)iv->window_size[0] - 1.0f;
+	dot->y = 2.0f * (float)y / (float)iv->window_size[1] - 1.0f;
+	iv->dots_len += 1;
+}
+
+void imgview_draw_cursor(Imgview *iv, float x, float y, float rad) {
+	if (!iv->show_cursor) { return; }
+	for (float dx = 0; dx < rad / 1.414213f; dx += 1.0f) {
+		float dy = sqrtf(rad * rad - (float)(dx * dx));
+		imgview_draw_point(iv, (int32_t)(x - dx), (int32_t)(y - dy));
+		imgview_draw_point(iv, (int32_t)(x - dy), (int32_t)(y - dx));
+		imgview_draw_point(iv, (int32_t)(x - dx), (int32_t)(y + dy));
+		imgview_draw_point(iv, (int32_t)(x - dy), (int32_t)(y + dx));
+		imgview_draw_point(iv, (int32_t)(x + dx), (int32_t)(y - dy));
+		imgview_draw_point(iv, (int32_t)(x + dy), (int32_t)(y - dx));
+		imgview_draw_point(iv, (int32_t)(x + dx), (int32_t)(y + dy));
+		imgview_draw_point(iv, (int32_t)(x + dy), (int32_t)(y + dx));
+	}
+}
+
 static void imgview_build_command(Imgview *iv, VkCommandBuffer cbuf) {
 	uint32_t width = iv->window_size[0];
 	uint32_t height = iv->window_size[1];
 	vkCmdUpdateBuffer(cbuf, iv->ubufg.buffer,
 		0, sizeof(ImgviewUniform), &iv->uniform);
+	if (iv->dots_len > 0) {
+		VkBufferCopy copy = {
+			.size = iv->dots_len * sizeof(ImgviewDot)
+		};
+		vkCmdCopyBuffer(cbuf, iv->dotsc.buffer, iv->dotsg.buffer,
+			1, &copy);
+	}
 	vkhelper2_dynstate_vs(cbuf, width, height);
 
 	VkFramebuffer fb = iv->vb.vs.elements[iv->iid].framebuffer;
@@ -54,6 +93,14 @@ static void imgview_build_command(Imgview *iv, VkCommandBuffer cbuf) {
 		iv->ppll_view,
 		0, 1, &iv->desc.set, 0, NULL);
 	vkCmdDraw(cbuf, 6, 1, 0, 0);
+	if (iv->dots_len > 0) {
+		vkCmdBindPipeline(cbuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+			iv->ppl_dots);
+		VkDeviceSize zero = 0;
+		vkCmdBindVertexBuffers(cbuf, 0, 1, &iv->dotsg.buffer, &zero);
+		vkCmdDraw(cbuf, (uint32_t)iv->dots_len, 1, 0, 0);
+		iv->dots_len = 0;
+	}
 	vkCmdEndRenderPass(cbuf);
 }
 
@@ -149,6 +196,8 @@ void imgview_deinit(Imgview* iv) {
 	VkDevice device = iv->vks.device;
 	vkhelper2_desc_deinit(&iv->desc, device);
 	vkhelper2_buffer_deinit(&iv->ubufg, device);
+	vkhelper2_buffer_deinit(&iv->dotsc, device);
+	vkhelper2_buffer_deinit(&iv->dotsg, device);
 	vkhelper2_image_deinit(&iv->img, device);
 	vkDestroySampler(device, iv->sampler, NULL);
 	vkDestroyRenderPass(device, iv->rp, NULL);
@@ -156,6 +205,8 @@ void imgview_deinit(Imgview* iv) {
 	vkDestroyPipelineLayout(device, iv->ppll_grid, NULL);
 	vkDestroyPipeline(device, iv->ppl_view, NULL);
 	vkDestroyPipelineLayout(device, iv->ppll_view, NULL);
+	vkDestroyPipeline(device, iv->ppl_dots, NULL);
+	vkDestroyPipelineLayout(device, iv->ppll_dots, NULL);
 	vkbasic_deinit(&iv->vb, device);
 	vkstatic_deinit(&iv->vks);
 }
