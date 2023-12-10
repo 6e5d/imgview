@@ -52,6 +52,51 @@ static void imgview_draw_point(Imgview *iv, int32_t x, int32_t y) {
 	iv->dots_len += 1;
 }
 
+void imgview_draw_line(Imgview *iv,
+	int32_t x1, int32_t y1, int32_t x2, int32_t y2)
+{
+	int dx, sx, dy, sy, dash = 0;
+	if (x1 < x2) {
+		dx = x2 - x1;
+		sx = 1;
+	} else {
+		dx = x1 - x2;
+		sx = -1;
+	}
+	if (y1 < y2) {
+		dy = y2 - y1;
+		sy = 1;
+	} else {
+		dy = y1 - y2;
+		sy = -1;
+	}
+	int ge, ge2;
+	if (dx > dy) {
+		ge = dx / 2;
+	} else {
+		ge = -dy / 2;
+	}
+	while (1) {
+		if (dash < 30) {
+			imgview_draw_point(iv, x1, y1);
+		}
+		if (x1 == x2 && y1 == y2) {
+			break;
+		}
+		ge2 = ge;
+		if (ge2 > -dx) {
+			ge -= dy;
+			x1 += sx;
+		}
+		if (ge2 < dy) {
+			ge += dx;
+			y1 += sy;
+		}
+		dash += 1;
+		dash %= 40;
+	}
+}
+
 void imgview_draw_cursor(Imgview *iv, float x, float y, float rad) {
 	if (!iv->show_cursor) { return; }
 	for (float dx = 0; dx < rad / 1.414213f; dx += 1.0f) {

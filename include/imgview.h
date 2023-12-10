@@ -52,6 +52,8 @@ void imgview_try_present(Imgview *iv); // sync
 void imgview_render(Imgview *iv, Vkhelper2Image *image);
 void imgview_init(Imgview* iv, struct wl_display *display,
 	struct wl_surface *surface, Dmgrect *rect);
+void imgview_draw_line(Imgview *iv,
+	int32_t x1, int32_t y1, int32_t x2, int32_t y2);
 void imgview_draw_cursor(Imgview *iv, float x, float y, float rad);
 void imgview_deinit(Imgview* iv);
 void imgview_resize(Imgview *iv, struct wl_surface *surface,
