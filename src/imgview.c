@@ -52,7 +52,7 @@ static void imgview_draw_point(Imgview *iv, int32_t x, int32_t y) {
 	iv->dots_len += 1;
 }
 
-void imgview_draw_line(Imgview *iv,
+void imgview_draw_dashed_line(Imgview *iv,
 	int32_t x1, int32_t y1, int32_t x2, int32_t y2)
 {
 	int dx, sx, dy, sy, dash = 0;
@@ -77,7 +77,7 @@ void imgview_draw_line(Imgview *iv,
 		ge = -dy / 2;
 	}
 	while (1) {
-		if (dash < 30) {
+		if (dash < 10) {
 			imgview_draw_point(iv, x1, y1);
 		}
 		if (x1 == x2 && y1 == y2) {
@@ -93,7 +93,7 @@ void imgview_draw_line(Imgview *iv,
 			y1 += sy;
 		}
 		dash += 1;
-		dash %= 40;
+		dash %= 20;
 	}
 }
 
