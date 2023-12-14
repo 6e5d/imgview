@@ -25,7 +25,7 @@ static void imgview_init_pipeline_dots(Imgview *iv, VkDevice device) {
 		.offset = 0,
 	};
 	vkhelper2_pipeline_simple_shader(&vpc, device,
-		__FILE__, "../../shader/dots");
+		__FILE__, "../../vwdraw_shaders/build/dots");
 	free(path);
 
 	vpc.dss.depthTestEnable = VK_FALSE;
@@ -41,7 +41,7 @@ static void imgview_init_pipeline_grid(Imgview *iv, VkDevice device) {
 	Vkhelper2PipelineConfig vpc = {0};
 	vkhelper2_pipeline_config(&vpc, 0, 0, 0);
 	vkhelper2_pipeline_simple_shader(&vpc, device,
-		__FILE__, "../../shader/grid");
+		__FILE__, "../../vwdraw_shaders/build/grid");
 	free(path);
 
 	vpc.dss.depthTestEnable = VK_FALSE;
@@ -57,7 +57,7 @@ static void imgview_init_pipeline_view(Imgview *iv, VkDevice device) {
 	vkhelper2_pipeline_config(&vpc, 0, 0, 1);
 
 	vkhelper2_pipeline_simple_shader(&vpc, device,
-		__FILE__, "../../shader/view");
+		__FILE__, "../../vwdraw_shaders/build/view");
 	vpc.dss.depthTestEnable = VK_FALSE;
 	vpc.dss.depthWriteEnable = VK_FALSE;
 	vpc.rast.cullMode = VK_CULL_MODE_NONE;

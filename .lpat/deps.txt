@@ -4,3 +4,4 @@ vkstatic
 vkhelper2
 ppath
 dmgrect
+vwdraw_shaders
