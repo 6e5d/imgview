@@ -1,7 +1,6 @@
 #include <vulkan/vulkan.h>
 
 #include "../../dmgrect/include/dmgrect.h"
-#include "../../ppath/include/ppath.h"
 #include "../../vkstatic/include/vkstatic.h"
 #include "../../vkhelper2/include/vkhelper2.h"
 #include "../include/pipeline.h"
