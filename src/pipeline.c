@@ -1,87 +1,80 @@
-#include <vulkan/vulkan.h>
-
-#include "../../dmgrect/include/dmgrect.h"
-#include "../../vkstatic/include/vkstatic.h"
-#include "../../vkhelper2/include/vkhelper2.h"
-#include "../include/pipeline.h"
 #include "../include/imgview.h"
 
-static void imgview_init_pipeline_dots(Imgview *iv, VkDevice device) {
+static void imgview(init_pipeline_dots)(Imgview() *iv, VkDevice device) {
 	char *path = NULL;
-	Vkhelper2PipelineConfig vpc = {0};
-	vkhelper2_pipeline_config(&vpc, 1, 1, 0);
+	Vkhelper2(PipelineConfig) vpc = {0};
+	vkhelper2(pipeline_config)(&vpc, 1, 1, 0);
 	vpc.ias.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
 	vpc.vib[0] = (VkVertexInputBindingDescription) {
 		.binding = 0,
-		.stride = sizeof(ImgviewDot),
+		.stride = sizeof(Imgview(Dot)),
 		.inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
 	};
-	typedef VkVertexInputAttributeDescription Via;
-	vpc.via[0] = (Via) {
+	vpc.via[0] = (VkVertexInputAttributeDescription) {
 		.binding = 0,
 		.location = 0,
 		.format = VK_FORMAT_R32G32_SFLOAT,
 		.offset = 0,
 	};
-	vkhelper2_pipeline_simple_shader(&vpc, device,
+	vkhelper2(pipeline_simple_shader)(&vpc, device,
 		__FILE__, "../../vwdraw_shaders/build/dots");
 	free(path);
 
 	vpc.dss.depthTestEnable = VK_FALSE;
 	vpc.dss.depthWriteEnable = VK_FALSE;
 	vpc.rast.cullMode = VK_CULL_MODE_NONE;
-	vkhelper2_pipeline_build(&iv->ppll_dots, &iv->ppl_dots,
+	vkhelper2(pipeline_build)(&iv->ppll_dots, &iv->ppl_dots,
 		&vpc, iv->rp, device, 0);
-	vkhelper2_pipeline_config_deinit(&vpc, device);
+	vkhelper2(pipeline_config_deinit)(&vpc, device);
 }
 
-static void imgview_init_pipeline_grid(Imgview *iv, VkDevice device) {
+static void imgview(init_pipeline_grid)(Imgview() *iv, VkDevice device) {
 	char *path = NULL;
-	Vkhelper2PipelineConfig vpc = {0};
-	vkhelper2_pipeline_config(&vpc, 0, 0, 0);
-	vkhelper2_pipeline_simple_shader(&vpc, device,
+	Vkhelper2(PipelineConfig) vpc = {0};
+	vkhelper2(pipeline_config)(&vpc, 0, 0, 0);
+	vkhelper2(pipeline_simple_shader)(&vpc, device,
 		__FILE__, "../../vwdraw_shaders/build/grid");
 	free(path);
 
 	vpc.dss.depthTestEnable = VK_FALSE;
 	vpc.dss.depthWriteEnable = VK_FALSE;
 	vpc.rast.cullMode = VK_CULL_MODE_NONE;
-	vkhelper2_pipeline_build(&iv->ppll_grid, &iv->ppl_grid,
+	vkhelper2(pipeline_build)(&iv->ppll_grid, &iv->ppl_grid,
 		&vpc, iv->rp, device, 0);
-	vkhelper2_pipeline_config_deinit(&vpc, device);
+	vkhelper2(pipeline_config_deinit)(&vpc, device);
 }
 
-static void imgview_init_pipeline_view(Imgview *iv, VkDevice device) {
-	Vkhelper2PipelineConfig vpc = {0};
-	vkhelper2_pipeline_config(&vpc, 0, 0, 1);
+static void imgview(init_pipeline_view)(Imgview() *iv, VkDevice device) {
+	Vkhelper2(PipelineConfig) vpc = {0};
+	vkhelper2(pipeline_config)(&vpc, 0, 0, 1);
 
-	vkhelper2_pipeline_simple_shader(&vpc, device,
+	vkhelper2(pipeline_simple_shader)(&vpc, device,
 		__FILE__, "../../vwdraw_shaders/build/view");
 	vpc.dss.depthTestEnable = VK_FALSE;
 	vpc.dss.depthWriteEnable = VK_FALSE;
 	vpc.rast.cullMode = VK_CULL_MODE_NONE;
 	vpc.desc[0] = iv->desc.layout;
-	vkhelper2_pipeline_build(&iv->ppll_view, &iv->ppl_view,
+	vkhelper2(pipeline_build)(&iv->ppll_view, &iv->ppl_view,
 		&vpc, iv->rp, device, 0);
-	vkhelper2_pipeline_config_deinit(&vpc, device);
+	vkhelper2(pipeline_config_deinit)(&vpc, device);
 }
 
-void imgview_init_render(Imgview* iv, Dmgrect *dmg) {
+void imgview(init_render)(Imgview()* iv, Dmgrect() *dmg) {
 	// buffer
-	vkhelper2_buffer_init_gpu(&iv->dotsg,
-		sizeof(ImgviewDot) * IMGVIEW_MAXDOT,
+	vkhelper2(buffer_init_gpu)(&iv->dotsg,
+		sizeof(Imgview(Dot)) * imgview(maxdot),
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 		iv->vks.device, iv->vks.memprop);
-	vkhelper2_buffer_init_cpu(&iv->dotsc,
-		sizeof(ImgviewDot) * IMGVIEW_MAXDOT,
+	vkhelper2(buffer_init_cpu)(&iv->dotsc,
+		sizeof(Imgview(Dot)) * imgview(maxdot),
 		iv->vks.device, iv->vks.memprop);
 	assert(0 == vkMapMemory(iv->vks.device, iv->dotsc.memory, 0,
-		sizeof(ImgviewDot) * IMGVIEW_MAXDOT, 0, (void**)&iv->dots));
-	vkhelper2_buffer_init_gpu(&iv->ubufg, sizeof(ImgviewUniform),
+		sizeof(Imgview(Dot)) * imgview(maxdot), 0, (void**)&iv->dots));
+	vkhelper2(buffer_init_gpu)(&iv->ubufg, sizeof(Imgview(Uniform)),
 		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 		iv->vks.device, iv->vks.memprop);
 	// TODO: mipmap is required, do a copy between vwdlayout and imgview
-	vkhelper2_image_new(
+	vkhelper2(image_new)(
 		&iv->img, iv->vks.device, iv->vks.memprop,
 		dmg->size[0], dmg->size[1], true,
 		VK_FORMAT_B8G8R8A8_UNORM,
@@ -93,23 +86,23 @@ void imgview_init_render(Imgview* iv, Dmgrect *dmg) {
 	iv->uniform.model[1][1] = (float)dmg->size[1];
 	iv->uniform.model[3][0] = (float)dmg->offset[0];
 	iv->uniform.model[3][1] = (float)dmg->offset[1];
-	VkCommandBuffer cbuf = vkstatic_oneshot_begin(&iv->vks);
-	vkhelper2_barrier(cbuf, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+	VkCommandBuffer cbuf = vkstatic(oneshot_begin)(&iv->vks);
+	vkhelper2(barrier)(cbuf, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		VK_PIPELINE_STAGE_HOST_BIT,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
 		&iv->img);
-	vkstatic_oneshot_end(cbuf, &iv->vks);
+	vkstatic(oneshot_end)(cbuf, &iv->vks);
 
 	// desc set
-	Vkhelper2DescConfig descconf;
-	vkhelper2_desc_config(&descconf, 2);
-	vkhelper2_desc_config_image(&descconf, 1);
-	vkhelper2_desc_build(&iv->desc, &descconf, iv->vks.device);
-	vkhelper2_desc_config_deinit(&descconf);
+	Vkhelper2(DescConfig) descconf;
+	vkhelper2(desc_config)(&descconf, 2);
+	vkhelper2(desc_config_image)(&descconf, 1);
+	vkhelper2(desc_build)(&iv->desc, &descconf, iv->vks.device);
+	vkhelper2(desc_config_deinit)(&descconf);
 	VkDescriptorBufferInfo bufferinfo = {
 		.buffer = iv->ubufg.buffer,
 		.offset = 0,
-		.range = sizeof(ImgviewUniform),
+		.range = sizeof(Imgview(Uniform)),
 	};
 	VkWriteDescriptorSet writes[2];
 	writes[0] = (VkWriteDescriptorSet) {
@@ -146,11 +139,11 @@ void imgview_init_render(Imgview* iv, Dmgrect *dmg) {
 	vkUpdateDescriptorSets(iv->vks.device, 2, writes, 0, NULL);
 
 	// graphics
-	Vkhelper2RenderpassConfig renderpass_conf;
-	vkhelper2_renderpass_config(&renderpass_conf,
+	Vkhelper2(RenderpassConfig) renderpass_conf;
+	vkhelper2(renderpass_config)(&renderpass_conf,
 		iv->vks.surface_format.format, iv->vks.depth_format);
-	vkhelper2_renderpass_build(&iv->rp, &renderpass_conf, iv->vks.device);
-	imgview_init_pipeline_grid(iv, iv->vks.device);
-	imgview_init_pipeline_view(iv, iv->vks.device);
-	imgview_init_pipeline_dots(iv, iv->vks.device);
+	vkhelper2(renderpass_build)(&iv->rp, &renderpass_conf, iv->vks.device);
+	imgview(init_pipeline_grid)(iv, iv->vks.device);
+	imgview(init_pipeline_view)(iv, iv->vks.device);
+	imgview(init_pipeline_dots)(iv, iv->vks.device);
 }

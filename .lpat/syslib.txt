@@ -1,0 +1,3 @@
+cglm
+vulkan
+wayland_client

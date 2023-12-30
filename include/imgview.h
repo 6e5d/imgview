@@ -1,33 +1,34 @@
-#ifndef INCLUDEGUARD_IMGVIEW
-#define INCLUDEGUARD_IMGVIEW
-
-#define IMGVIEW_MAXDOT 100000
-
+#include <cglm.h>
 #include <vulkan/vulkan.h>
 #include <wayland-client.h>
 
-typedef struct Imgview Imgview;
+#include "../../dmgrect/build/dmgrect.h"
+#include "../../vkbasic/build/vkbasic.h"
+#include "../../vkstatic/build/vkstatic.h"
+#include "../../vkhelper2/build/vkhelper2.h"
 
-#include "../../dmgrect/include/dmgrect.h"
-#include "../../vkbasic/include/vkbasic.h"
-#include "../../vkstatic/include/vkstatic.h"
-#include "../../vkhelper2/include/vkhelper2.h"
-#include "../include/uniform.h"
+const static size_t imgview(maxdot) = 100000;
+
+typedef struct {
+	mat4 model; // use fixed rectangle [0, 1]
+	mat4 proj; // window
+	mat4 view; // camera
+} Imgview(Uniform);
 
 typedef struct {
 	float x;
 	float y;
-} ImgviewDot;
+} Imgview(Dot);
 
-struct Imgview {
-	ImgviewUniform uniform;
-	Vkhelper2Buffer ubufg;
-	Vkhelper2Buffer dotsg;
-	Vkhelper2Buffer dotsc;
-	ImgviewDot *dots;
+typedef struct {
+	Imgview(Uniform) uniform;
+	Vkhelper2(Buffer) ubufg;
+	Vkhelper2(Buffer) dotsg;
+	Vkhelper2(Buffer) dotsc;
+	Imgview(Dot) *dots;
 	size_t dots_len;
-	Vkhelper2Image img;
-	Vkhelper2Desc desc;
+	Vkhelper2(Image) img;
+	Vkhelper2(Desc) desc;
 	VkSampler sampler;
 
 	VkRenderPass rp;
@@ -41,22 +42,21 @@ struct Imgview {
 	bool show_cursor;
 	bool present;
 	bool resize;
-	Vkstatic vks;
-	Vkbasic vb;
+	Vkstatic() vks;
+	Vkbasic() vb;
 	uint32_t iid;
 	uint32_t window_size[2];
-};
+} Imgview();
 
-void imgview_render_prepare(Imgview *iv);
-void imgview_try_present(Imgview *iv); // sync
-void imgview_render(Imgview *iv, Vkhelper2Image *image);
-void imgview_init(Imgview* iv, struct wl_display *display,
-	struct wl_surface *surface, Dmgrect *rect);
-void imgview_draw_dashed_line(Imgview *iv,
+void imgview(render_prepare)(Imgview() *iv);
+void imgview(try_present)(Imgview() *iv); // sync
+void imgview(render)(Imgview() *iv, Vkhelper2(Image) *image);
+void imgview(init)(Imgview()* iv, struct wl_display *display,
+	struct wl_surface *surface, Dmgrect() *rect);
+void imgview(draw_dashed_line)(Imgview() *iv,
 	int32_t x1, int32_t y1, int32_t x2, int32_t y2);
-void imgview_draw_cursor(Imgview *iv, float x, float y, float rad);
-void imgview_deinit(Imgview* iv);
-void imgview_resize(Imgview *iv, struct wl_surface *surface,
+void imgview(draw_cursor)(Imgview() *iv, float x, float y, float rad);
+void imgview(deinit)(Imgview()* iv);
+void imgview(resize)(Imgview() *iv, struct wl_surface *surface,
 	uint32_t w, uint32_t h);
-
-#endif
+void imgview(init_render)(Imgview()* iv, Dmgrect() *dmg);
